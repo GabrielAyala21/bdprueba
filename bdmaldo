@@ -1,0 +1,94 @@
+-- Consultas en SQL:
+
+-- Listado de clientes y sus préstamos
+SELECT cliente.nombrecliente, prestamo.importe
+FROM cliente
+JOIN prestario ON cliente.idcliente = prestario.idcliente
+JOIN prestamo ON prestario.numprestamo = prestamo.numprestamo;
+
+-- Consulta que muestra en qué sucursal tiene su cuenta el cliente Pere José
+SELECT sucursal.nombresucursal AS sucursal
+FROM cliente
+JOIN ctacliente ON cliente.idcliente = ctacliente.idcliente
+JOIN cuenta ON ctacliente.numcta = cuenta.numcta
+JOIN sucursal ON cuenta.numsucursal = sucursal.numsucursal
+WHERE cliente.nombrecliente = 'Pere José';
+
+-- Listado de sucursales y clientes que tienen préstamos en dicha sucursal
+SELECT sucursal.nombresucursal AS sucursal, cliente.nombrecliente AS cliente
+FROM sucursal
+JOIN prestamo ON sucursal.numsucursal = prestamo.numsucursal
+JOIN prestario ON prestamo.numprestamo = prestario.numprestamo
+JOIN cliente ON prestario.idcliente = cliente.idcliente;
+
+-- Listado de clientes que tienen más de 20 años
+SELECT nombrecliente
+FROM cliente
+WHERE TIMESTAMPDIFF(YEAR, nacimiento, CURDATE()) > 20;
+
+-- Clientes que tienen un préstamo de más de $500.000
+SELECT cliente.nombrecliente
+FROM cliente
+JOIN prestario ON cliente.idcliente = prestario.idcliente
+JOIN prestamo ON prestario.numprestamo = prestamo.numprestamo
+WHERE prestamo.importe > 500000;
+
+-- Listado de cuentas de cliente que tienen más de $800.000 en su saldo
+SELECT cliente.nombrecliente, cuenta.saldo
+FROM cuenta
+JOIN ctacliente ON cuenta.numcta = ctacliente.numcta
+JOIN cliente ON ctacliente.idcliente = cliente.idcliente
+WHERE cuenta.saldo > 800000;
+
+-- Listado de los préstamos de la sucursal del distrito "Vicente López"
+SELECT prestamo.*
+FROM prestamo
+JOIN sucursal ON prestamo.numsucursal = sucursal.numsucursal
+WHERE sucursal.distrito = 'Vicente López';
+
+-- Nombre de los clientes que tienen un préstamo y una cuenta abierta
+SELECT DISTINCT cliente.nombrecliente
+FROM cliente
+JOIN prestario ON cliente.idcliente = prestario.idcliente
+JOIN prestamo ON prestario.numprestamo = prestamo.numprestamo
+JOIN ctacliente ON cliente.idcliente = ctacliente.idcliente
+JOIN cuenta ON ctacliente.numcta = cuenta.numcta;
+
+-- Listado de los clientes que tienen una cuenta pero no tienen un préstamo
+SELECT cliente.nombrecliente
+FROM cliente
+JOIN ctacliente ON cliente.idcliente = ctacliente.idcliente
+LEFT JOIN prestario ON cliente.idcliente = prestario.idcliente
+WHERE prestario.idcliente IS NULL;
+
+
+
+
+-- Consultas en Álgebra Relacional:
+
+-- Listado de clientes y sus préstamos
+π nombrecliente, importe ((cliente ⨝ idcliente=prestario.idcliente prestario) ⨝ prestario.numprestamo=prestamo.numprestamo prestamo)
+
+-- En qué sucursal tiene su cuenta el cliente Pere José
+π nombresucursal (σ nombrecliente='Pere José' (cliente ⨝ idcliente=ctacliente.idcliente ctacliente ⨝ ctacliente.numcta=cuenta.numcta cuenta ⨝ cuenta.numsucursal=sucursal.numsucursal sucursal))
+
+-- Listado de sucursales y clientes con préstamos en dicha sucursal
+π nombresucursal, nombrecliente (sucursal ⨝ numsucursal=prestamo.numsucursal (prestamo ⨝ numprestamo=prestario.numprestamo (prestario ⨝ idcliente=cliente.idcliente cliente)))
+
+-- Listado de clientes que tienen más de 20 años
+π nombrecliente (σ TIMESTAMPDIFF(YEAR, nacimiento, CURDATE()) > 20 (cliente))
+
+-- Clientes con un préstamo mayor a $500,000
+π nombrecliente (σ importe > 500000 (cliente ⨝ idcliente=prestario.idcliente (prestario ⨝ numprestamo=prestamo.numprestamo prestamo)))
+
+-- Listado de cuentas de cliente con saldo mayor a $800,000
+π nombrecliente, saldo (cliente ⨝ idcliente=ctacliente.idcliente (ctacliente ⨝ numcta=cuenta.numcta (σ saldo > 800000 cuenta)))
+
+-- Préstamos en sucursales del distrito "Vicente López"
+π * (σ distrito='Vicente López' (sucursal ⨝ numsucursal=prestamo.numsucursal prestamo))
+
+-- Clientes con un préstamo y una cuenta abierta
+π nombrecliente ((cliente ⨝ idcliente=prestario.idcliente (prestario ⨝ numprestamo=prestamo.numprestamo prestamo)) ∩ (cliente ⨝ idcliente=ctacliente.idcliente (ctacliente ⨝ numcta=cuenta.numcta cuenta)))
+
+-- Clientes con una cuenta pero sin un préstamo
+π nombrecliente ((cliente ⨝ idcliente=ctacliente.idcliente ctacliente) − (cliente ⨝ idcliente=prestario.idcliente prestario))
